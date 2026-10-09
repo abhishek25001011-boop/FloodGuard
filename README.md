@@ -1,106 +1,368 @@
-# FloodGuard - Smart Storm-Drain Monitoring
+# 🌊 FloodGuard
+### IoT-Based Smart Storm-Drain Monitoring & Early Flood Warning System
 
-FloodGuard is a local storm-drain and low-lying-area monitoring prototype for early warning of possible drainage overflow at one sensor node. It is not a city-wide flood forecasting system.
+FloodGuard is an IoT and Machine Learning-based prototype designed to monitor water levels and wetness near storm drains and low-lying areas. It classifies conditions into **LOW, MODERATE, or HIGH risk** to support early awareness of potential overflow conditions.
 
-## Problem
+The system integrates sensor data collection, an ESP8266 microcontroller, a FastAPI prediction backend, a machine learning model, and a web dashboard. Optional Blynk integration can provide additional IoT monitoring.
 
-Water-level-only monitoring can warn too late at a drain or low-lying point. Soil moisture-derived wetness and the rate at which water is rising provide local context before water reaches an overflow condition.
+> **Note:** This is a prototype, not a field-validated flood forecasting system. The current ML model uses synthetic training data. Soil moisture is used as a wetness indicator and does not directly measure rainfall in mm/hr.
 
-## Solution
+---
 
-FloodGuard combines water level, soil moisture as a wetness proxy, a wetness threshold flag, and rate of water-level rise with Random Forest classification to return `LOW`, `MODERATE`, or `HIGH` local drainage risk.
+## ✨ Key Features
 
-## Key Innovation
+- 🌊 **Water-Level Monitoring:** Uses an HC-SR04 ultrasonic sensor to estimate water level.
+- 🌱 **Wetness Monitoring:** Uses a soil-moisture sensor as a wetness proxy.
+- 📡 **IoT Connectivity:** ESP8266 NodeMCU communicates over Wi-Fi.
+- 🤖 **ML-Based Risk Classification:** Categorizes conditions into LOW, MODERATE, or HIGH risk.
+- ⚡ **FastAPI Backend:** Receives sensor readings and generates predictions.
+- 📊 **Web Dashboard:** Displays monitoring information and risk status.
+- 🔔 **Alert Support:** Buzzer and optional Blynk integration.
+- 🧪 **Sensor Simulator:** Allows software testing without physical hardware.
+- ✅ **Automated Tests:** Includes API tests for development and verification.
 
-Sensor fusion and trend information can reveal escalating risk before water reaches a critical level.
+---
 
-## Architecture
+## 🧰 Technology Stack
 
-### Current software prototype
+| Component | Technology |
+|---|---|
+| Microcontroller | ESP8266 NodeMCU |
+| Ultrasonic Sensor | HC-SR04 |
+| Wetness Sensor | Soil-Moisture Sensor |
+| Firmware | Arduino C++ / PlatformIO |
+| Backend | Python, FastAPI |
+| Machine Learning | scikit-learn, joblib |
+| Frontend | HTML, CSS, JavaScript |
+| Testing | pytest |
+| IoT Monitoring | Blynk (optional) |
+| Version Control | Git and GitHub |
+
+---
+
+## 🏗️ System Architecture
 
 ```text
-Sensor simulator → FastAPI → Random Forest model → Drainage risk → Dashboard
+       HC-SR04 + Soil-Moisture Sensor
+                     |
+                     v
+              ESP8266 NodeMCU
+                     |
+                  Wi-Fi
+                     |
+                     v
+              FastAPI Backend
+                /predict
+                     |
+                     v
+             ML Risk Classifier
+                     |
+           +---------+---------+
+           |                   |
+           v                   v
+     Risk Classification   API / History
+     LOW / MODERATE / HIGH     |
+           |                   |
+           +---------+---------+
+                     |
+                     v
+               Web Dashboard
+                     |
+                     v
+           Optional Blynk Alerts
 ```
 
-### Hardware integration code (physical validation pending)
+A sensor simulator is also available to test the software pipeline without connected hardware.
+
+---
+
+## 📁 Project Structure
 
 ```text
-Sensors / Simulator → ESP8266 → Wi-Fi → FastAPI → Random Forest → Drainage risk → Dashboard / Blynk
+FloodGuard/
+│
+├── backend/
+│   ├── __init__.py
+│   ├── main.py
+│   └── schemas.py
+│
+├── data/
+│   └── flood_data.csv
+│
+├── docs/
+│   ├── DEMO_SCRIPT.md
+│   ├── PROJECT_REPORT.md
+│   └── TECHNICAL_ARCHITECTURE.md
+│
+├── firmware/
+│   └── esp8266_floodguard/
+│       ├── esp8266_floodguard.ino
+│       ├── platformio.ini
+│       └── secrets.h.example
+│
+├── frontend/
+│   ├── index.html
+│   ├── script.js
+│   └── style.css
+│
+├── ml/
+│   ├── __init__.py
+│   ├── feature_order.json
+│   ├── generate_dataset.py
+│   ├── model.joblib
+│   ├── model_loader.py
+│   └── train_model.py
+│
+├── simulator/
+│   ├── __init__.py
+│   └── sensor_simulator.py
+│
+├── tests/
+│   ├── __init__.py
+│   └── test_api.py
+│
+├── requirements.txt
+├── README.md
+└── .gitignore
 ```
 
-No physical hardware has been tested. The simulator and ESP8266 firmware use the same API contract.
+---
 
-## Features
+## 🚀 Getting Started
 
-- Reproducible synthetic local-drainage development dataset and saved Random Forest model
-- Validated FastAPI prediction API with latest/history endpoints
-- Hardware-compatible software sensor simulator
-- Responsive live dashboard with risk states, trend chart, and recent readings
+### Prerequisites
 
-## ML Model
+Install the following:
 
-`RandomForestClassifier` uses `water_level_cm`, `moisture_pct`, `rain_detected`, and `rise_rate_cm_min`. `moisture_pct` is calibrated soil wetness from 0% dry to 100% wet; it does not measure rainfall in mm/hour. The artifact is `ml/model.joblib`; the API loads it through `ml/model_loader.py` and does not retrain per request. Saved metrics are development results on synthetic labels only, not real-world accuracy.
+- Python 3.10+ with a version compatible with the project dependencies
+- Git
+- VS Code (recommended)
+- PlatformIO extension if you want to build and upload ESP8266 firmware
 
-## API
+### 1. Clone the Repository
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| GET | `/` | API identification |
-| GET | `/health` | Health check |
-| POST | `/predict` | ML prediction |
-| GET | `/latest` | Latest in-memory prediction |
-| GET | `/history` | Up to 20 newest-first predictions |
-| GET | `/dashboard/` | Web dashboard |
-
-```json
-POST /predict
-{"water_level_cm":55,"moisture_pct":90,"rain_detected":true,"rise_rate_cm_min":6}
+```bash
+git clone https://github.com/abhishek25001011-boop/FloodGuard.git
 ```
 
-```json
-{"risk":"HIGH","probabilities":{"HIGH":0.99,"LOW":0.0,"MODERATE":0.01},"input":{"water_level_cm":55.0,"moisture_pct":90.0,"rain_detected":true,"rise_rate_cm_min":6.0}}
+Navigate to the project directory:
+
+```bash
+cd FloodGuard
 ```
 
-Example values are synthetic-development outputs for a local drainage point, not real-world forecasts. Visit `http://127.0.0.1:8000/docs` for interactive documentation.
+### 2. Create a Virtual Environment
 
-## Running the Project (Windows)
+On Windows:
 
-```powershell
-.\.venv\Scripts\Activate.ps1
-python -m uvicorn backend.main:app --reload
+```bash
+python -m venv .venv
 ```
 
-Open `http://127.0.0.1:8000/dashboard/`. In a second PowerShell window:
+Activate it:
 
-```powershell
-.\.venv\Scripts\Activate.ps1
-python simulator\sensor_simulator.py --scenario rising_water
+```bash
+.venv\Scripts\activate
 ```
 
-## Simulator
+### 3. Install Dependencies
 
-```powershell
-python simulator\sensor_simulator.py --scenario normal_drainage
-python simulator\sensor_simulator.py --scenario rising_water
-python simulator\sensor_simulator.py --scenario rapid_water_rise
-python simulator\sensor_simulator.py --scenario high_wetness_rising_water
-python simulator\sensor_simulator.py --scenario potential_storm_drain_overflow
-python simulator\sensor_simulator.py --scenario rapid_water_rise --interval 2
+```bash
+python -m pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
-Use `Ctrl+C` to stop continuous mode.
+### 4. Start the Backend
 
-## Limitations
+From the project root, run:
 
-- The ML development data is synthetic and cannot establish real-world accuracy.
-- Moisture is a wetness/rain proxy only; it is not rainfall in mm/hour.
-- Real drainage observations and hydrological validation are required.
-- Physical sensors require calibration and environmental testing.
-- The node needs Wi-Fi access to a LAN-reachable FastAPI host; the API and dashboard need a deployment host and network monitoring.
-- No automated pumps or sluices are implemented.
+```bash
+uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
 
-## ESP8266 + Blynk integration
+If the application starts successfully, try these endpoints:
 
-Firmware lives in `firmware/esp8266_floodguard/` and targets the NodeMCU ESP8266. Verified pins are TRIG=D5, ECHO=D6, MOISTURE=A0, BUZZER=D7, and LED=D2. Copy `secrets.h.example` to `secrets.h`, then set Wi-Fi, Blynk template/device token, and a LAN-reachable `FLOODGUARD_API_URL`. Set `MAX_WATER_DEPTH_CM` to the installed sensor-to-floor distance and calibrate the moisture dry/wet ADC values in the sketch. Common HC-SR04 modules output 5 V on Echo; the ESP8266 input requires a suitable voltage divider or level shifter before D6.
+| Endpoint | Purpose |
+|---|---|
+| `/health` | Backend health check |
+| `/predict` | Risk prediction endpoint |
+| `/latest` | Latest monitoring information, if enabled |
+| `/history` | Historical readings, if enabled |
+| `/dashboard/` | Web dashboard, if enabled |
 
-Create Blynk datastreams V0 water level (cm), V1 soil moisture/wetness (%), V2 rise rate (cm/min), V3 drainage risk (string), and V4 wetness detection (0/1). V4 publishes the moisture-derived wetness threshold state, not rainfall intensity. API input is `water_level_cm`, `moisture_pct` (0 dry, 100 wet), `rain_detected` (true at 75% wetness), and `rise_rate_cm_min`. The LED and buzzer activate for API risk `HIGH`. Device firmware and physical sensors have not been hardware-tested; verify wiring, calibration, voltage protection, network access, and alarm behavior on the actual installation.
+For local testing, use:
+
+```text
+http://127.0.0.1:8000
+```
+
+FastAPI interactive documentation may be available at:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+The exact endpoints depend on the implementation in `backend/main.py`.
+
+### 5. Run Automated Tests
+
+```bash
+python -m pytest -q
+```
+
+### 6. Test with the Sensor Simulator
+
+The simulator is located at:
+
+```text
+simulator/sensor_simulator.py
+```
+
+Start the backend first. Then inspect the simulator's supported arguments and API URL before running it.
+
+The simulator can help test the API and prediction pipeline without physical sensors.
+
+---
+
+## 🔌 Hardware Components
+
+The current firmware targets an **ESP8266 NodeMCU**.
+
+| Component | Purpose |
+|---|---|
+| ESP8266 NodeMCU | Main controller and Wi-Fi connectivity |
+| HC-SR04 | Measures distance to the water surface |
+| Soil-Moisture Sensor | Provides a wetness-related reading |
+| Passive Buzzer | Audible alert output |
+| LED (optional) | Visual status indicator |
+| Breadboard and jumper wires | Circuit connections |
+| Resistors or suitable level shifter | Protect the ESP8266 Echo input |
+
+---
+
+## 📌 ESP8266 Wiring
+
+| Component Pin | NodeMCU Pin |
+|---|---|
+| HC-SR04 VCC | VIN / 5V supply |
+| HC-SR04 GND | GND |
+| HC-SR04 TRIG | D5 / GPIO14 |
+| HC-SR04 ECHO | D6 / GPIO12 through a voltage divider or suitable level shifter |
+| Soil-Moisture VCC | 3V3, if supported by the module |
+| Soil-Moisture GND | GND |
+| Soil-Moisture AO | A0 |
+| Buzzer Positive | D7 / GPIO13 |
+| Buzzer Negative | GND |
+| Optional LED Positive | D2 / GPIO4 through a current-limiting resistor |
+| Optional LED Negative | GND |
+
+### ⚠️ Electrical Safety
+
+A standard HC-SR04 Echo output may be approximately 5V, while ESP8266 GPIO pins use 3.3V logic and are not 5V tolerant.
+
+**Do not connect a standard HC-SR04 Echo output directly to D6.** Use a correctly wired voltage divider or a suitable level shifter.
+
+Also verify the analog input voltage range of your specific NodeMCU board before connecting the soil-moisture sensor to A0. Connect the grounds of the modules together.
+
+---
+
+## ⚙️ Firmware Configuration
+
+Firmware files are located in:
+
+```text
+firmware/esp8266_floodguard/
+```
+
+### Configuration Steps
+
+1. Open the firmware folder in VS Code with PlatformIO installed.
+2. Copy `secrets.h.example` to `secrets.h`.
+3. Enter your own Wi-Fi credentials.
+4. Configure Blynk credentials if using Blynk.
+5. Configure the backend URL according to the firmware.
+6. Build the project before uploading it to the ESP8266.
+
+### Important Security Notes
+
+- Never upload your real `secrets.h`.
+- Never commit Wi-Fi passwords, Blynk authentication tokens, or private API keys.
+- Keep `secrets.h.example` free of real credentials.
+- If the ESP8266 communicates with a backend running on your laptop, use the laptop's local network IP address rather than `127.0.0.1`.
+- Keep the laptop and ESP8266 on the same accessible network and configure firewall access if necessary.
+
+---
+
+## 🤖 Machine Learning
+
+FloodGuard includes scripts for dataset generation, model training, and model loading.
+
+Relevant files:
+
+```text
+ml/
+├── feature_order.json
+├── generate_dataset.py
+├── model.joblib
+├── model_loader.py
+└── train_model.py
+```
+
+The model uses sensor-related features to classify the current prototype's risk categories.
+
+### Current Limitations
+
+- The current model is trained on synthetic data.
+- Real-world calibration and field validation are still required.
+- Soil moisture is not a direct measurement of rainfall intensity.
+- Risk labels are prototype classifications, not official emergency warnings.
+- Performance may vary with sensor placement, turbulence, drain geometry, and environmental conditions.
+- Automated pumps, gates, and other mitigation mechanisms are not implemented unless separately developed and validated.
+
+---
+
+## 🧪 Testing and Demonstration
+
+A software demonstration can show:
+
+1. Simulated sensor readings.
+2. Data submitted to the prediction API.
+3. Machine-learning risk classification.
+4. Dashboard updates.
+5. Configured alert output.
+
+For a physical demonstration, use actual sensor readings and clearly distinguish them from simulated data.
+
+Additional documentation:
+
+- [Demo Script](docs/DEMO_SCRIPT.md)
+- [Project Report](docs/PROJECT_REPORT.md)
+- [Technical Architecture](docs/TECHNICAL_ARCHITECTURE.md)
+
+---
+
+## 🔮 Future Scope
+
+- Collect and label real-world sensor data.
+- Calibrate water-level measurements for specific storm-drain geometry.
+- Integrate suitable rainfall and water-flow sensors.
+- Evaluate the model using held-out, field-collected data.
+- Improve alert reliability and deployment monitoring.
+- Develop weather-resistant enclosures and power management.
+- Explore automated mitigation only after safety analysis and field validation.
+
+---
+
+## 👨‍💻 Author
+
+**Abhishek Kumar**
+
+GitHub: [@abhishek25001011-boop](https://github.com/abhishek25001011-boop)
+
+Project Repository: [FloodGuard](https://github.com/abhishek25001011-boop/FloodGuard)
+
+---
+
+## 📄 License
+
+No license has been added yet. Unless a license is added, the repository's code is not automatically granted an open-source license.
