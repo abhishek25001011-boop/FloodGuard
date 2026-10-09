@@ -1,0 +1,6 @@
+[
+  "water_level_cm",
+  "moisture_pct",
+  "rain_detected",
+  "rise_rate_cm_min"
+]
