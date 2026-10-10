@@ -1,9 +1,8 @@
 #include "secrets.h"
 
-#define BLYNK_TEMPLATE_ID TMPL3ja_qopWD
+#define BLYNK_AUTH_TOKEN "YOUR_ACTUAL_TOKEN"
 #define BLYNK_TEMPLATE_NAME "FloodGuard"
-#define BLYNK_AUTH_TOKEN 3-HG6X8c3QmkO2ckrR1OqUkh62PutG8w
-
+#define BLYNK_AUTH_TOKEN "YOUR_ACTUAL_TOKEN"
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <ArduinoJson.h>
